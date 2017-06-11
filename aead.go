@@ -127,14 +127,11 @@ func (a *ChaCha20Poly1305) Seal(dst, nonce, plaintext, additionalData []byte) []
 
 	// The length of the additional data in octets (as a 64-bit
 	//  little-endian integer).
-	var lenBuf [8]byte
-	binary.LittleEndian.PutUint64(lenBuf[0:], uint64(len(additionalData)))
-	m.Write(lenBuf[:])
+	binary.Write(m, binary.LittleEndian, uint64(len(additionalData)))
 
 	// The length of the ciphertext in octets (as a 64-bit little-
 	//  endian integer).
-	binary.LittleEndian.PutUint64(lenBuf[0:], uint64(len(plaintext)))
-	m.Write(lenBuf[:])
+	binary.Write(m, binary.LittleEndian, uint64(len(plaintext)))
 
 	// Return `dst | ciphertext | tag.
 	ret = m.Sum(ret)
@@ -166,11 +163,8 @@ func (a *ChaCha20Poly1305) Open(dst, nonce, ciphertext, additionalData []byte) (
 	m.Write(ciphertext[:ctLen])
 	padding2 := (16 - (ctLen & 0x0f)) & 0x0f
 	m.Write(paddingBytes[:padding2])
-	var lenBuf [8]byte
-	binary.LittleEndian.PutUint64(lenBuf[0:], uint64(len(additionalData)))
-	m.Write(lenBuf[:])
-	binary.LittleEndian.PutUint64(lenBuf[0:], uint64(ctLen))
-	m.Write(lenBuf[:])
+	binary.Write(m, binary.LittleEndian, uint64(len(additionalData)))
+	binary.Write(m, binary.LittleEndian, uint64(ctLen))
 	derivedTag := m.Sum(nil)
 	if subtle.ConstantTimeCompare(ciphertext[ctLen:], derivedTag[:]) != 1 {
 		memwipe(dst)
